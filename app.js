@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 
 const express = require("express");
 const ejs = require("ejs");
-const encrypt = require("mongoose-encryption"); // Must see documentation https://www.npmjs.com/package/mongoose-encryption
+const md5 = require("md5");
 
 const app = express();
 
@@ -28,10 +28,7 @@ const userSchema = new mongoose.Schema ({
     }
 });
 
-// Encryption key
-const secret = process.env.SECRET;
-// Set the plugin into the mongoose schema and encrypt certain fields
-userSchema.plugin(encrypt, {secret: secret, encryptedFields: ['password'/*, ...*/]});
+
 
 
 const User = new mongoose.model("User", userSchema);
@@ -47,7 +44,7 @@ app.route("/login")
 
     .post(function(req,res){
         const username = req.body.username;
-        const password = req.body.password;
+        const password = md5(req.body.password);
         // Automatically mongoose-encrypt will decrypt the password field
         User.findOne({email: username}, (err, foundUser)=>{
             if(!err){
@@ -72,8 +69,8 @@ app.route("/register")
     
     .post(function(req,res){
         const newUser = new User ({
-            email: req.body.username,
-            password: req.body.password,
+            email:  req.body.username,
+            password: md5(req.body.password),
         });
         // Automatically mongoose-encrypt will encrypt the password field
         newUser.save(function(err){
