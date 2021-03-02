@@ -1,0 +1,7 @@
+# Environment variables
+.env
+
+# Node modules and whir json
+node_modules/
+.json
+
