@@ -4,7 +4,9 @@ const mongoose = require("mongoose");
 
 const express = require("express");
 const ejs = require("ejs");
-const md5 = require("md5");
+const bcrypt = require("bcrypt");
+const saltRounds = 11;
+
 
 const app = express();
 
@@ -43,15 +45,19 @@ app.route("/login")
     })
 
     .post(function(req,res){
+        const password = req.body.password;
         const username = req.body.username;
-        const password = md5(req.body.password);
-        // Automatically mongoose-encrypt will decrypt the password field
+
         User.findOne({email: username}, (err, foundUser)=>{
             if(!err){
                 if(foundUser){
-                    if(foundUser.password === password){
-                        res.render("secrets");
-                    }
+
+                    bcrypt.compare(password, foundUser.password, function(error, result){
+                        if(result){
+                            res.render("secrets");
+                        }
+                    });
+
                 }else{
                     res.send("Incorrect username and/or password, try again");
                 }
@@ -59,8 +65,9 @@ app.route("/login")
                 console.log(err);
                 res.send("Error please try again later");
             }
-        })
-    })
+        });
+        
+    });
 
 app.route("/register")
     .get(function(req, res){
@@ -68,19 +75,19 @@ app.route("/register")
     })
     
     .post(function(req,res){
-        const newUser = new User ({
-            email:  req.body.username,
-            password: md5(req.body.password),
+        bcrypt.hash(req.body.password,saltRounds,function(error, hash){
+            const newUser = new User ({
+                email:  req.body.username,
+                password: hash,
+            });
+            
+            newUser.save(function(err){
+                !err ? res.render("secrets") : console.log(err);
+            });
         });
-        // Automatically mongoose-encrypt will encrypt the password field
-        newUser.save(function(err){
-            !err ? res.render("secrets") : console.log(err);
-        });
-    })
-
-
-
-
+       
+   
+    });
 
 app.listen(3000, function(){
     console.log("Server started on port 3000");
